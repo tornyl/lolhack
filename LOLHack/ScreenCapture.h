@@ -322,6 +322,7 @@ public:
         _lImmediateContext->CopyResource(currTexture, _lAcquiredDesktopImage.Get());
         UINT subresource = D3D11CalcSubresource(0, 0, 0);
         _lImmediateContext->Map(currTexture, subresource, D3D11_MAP_READ, 0, &_resource);
+        //_lImmediateContext->Map(_lAcquiredDesktopImage.Get(), subresource, D3D11_MAP_READ, 0, &_resource);
         _lImmediateContext->Unmap(currTexture, 0);
         currTexture->Release();
         hr = _lDeskDupl->ReleaseFrame();

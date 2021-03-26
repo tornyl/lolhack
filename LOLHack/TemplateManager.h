@@ -20,17 +20,23 @@ private:
 	static inline int result_rows;
 	static inline int match_method;
 	static inline Mat result;
-	static inline cuda::GpuMat result_cuda;
+	static inline cuda::GpuMat result_cuda[5];
+	static inline cuda::GpuMat result_cuda_0;
+	static inline cuda::GpuMat result_cuda_1;
 	static inline double minVal;
 	static inline double maxVal;
 	static inline Point minLoc;
 	static inline Point maxLoc;
-	static inline Point matchLoc;
-	static inline Point lastMatch;
+	static inline Point matchLoc[5];
+	static inline Point lastMatch[5];
 	static inline Point mousePos;
 	static inline HDC hDC_Desktop;
 	static inline HBRUSH blueBrush;
-	static inline Ptr < cuda::TemplateMatching> b;
+	static inline Ptr< cuda::TemplateMatching> b[5];
+	static inline cuda::Stream stream[5];
+	static inline float x_plus[5];
+	static inline float y_plus[5];
+	static inline double lastMinVal[5];
 public:
 
 
@@ -44,8 +50,9 @@ public:
 	//static constructor cons;
 
 	static Mat FindTemplate(int, void*, Mat image, Mat templ);
-	static cuda::GpuMat FindTemplate_gpu(int, void*, cuda::GpuMat image, cuda::GpuMat templ);
+	static void FindTemplate_gpu(int, void*, cuda::GpuMat &image, cuda::GpuMat &templ, int index);
 	static void SetMousePosition();
+	static void DrawRectAndUpdateMousePos();
 
 };
 

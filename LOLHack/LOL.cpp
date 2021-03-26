@@ -7,6 +7,7 @@
 #include <string>
 #include "ScreenShooter.h"
 #include "TemplateManager.h"
+#include <thread>
 //#include "opencv2/cudaimgproc.hpp"
 //#include <opencv2/core/cuda.hpp>
 using namespace cv;
@@ -125,12 +126,76 @@ Mat captureScreenMat(HWND hwnd)
 	return src;
 }
 
+
 cuda::GpuMat IMAGE = ScreenShooter::TakeScreenShotV2();
-Mat TEMPL_ = imread("D:/Programing/projects/cANDc++/LOLHack/Resources/templates/darius.png", IMREAD_UNCHANGED);
+Mat TEMPL_;
 Mat experimental_ = imread("D:/Programing/projects/cANDc++/LOLHack/Resources/img2.png", IMREAD_UNCHANGED);
-cuda::GpuMat TEMPL;
+string champions[5] = { "garen", "lucian", "soraka", "master_yi", "ryze" };
+cuda::GpuMat TEMPLb;
+cuda::GpuMat TEMPL_2;
+cuda::GpuMat TEMPL[5];
 TemplateManager::constructor TemplateManager::cons(IMAGE, TEMPL_);
 INPUT inputs[4];
+//cuda::GpuMat imagePool[5];
+
+void EventLoop() {
+	bool rangeQtoogle = false;
+	while (true) {
+		if (GetAsyncKeyState('Q') != 0) {
+			rangeQtoogle = true;
+		}
+		else if (rangeQtoogle) {
+			TemplateManager::SetMousePosition();
+			inputs[0].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
+			rangeQtoogle = false;
+		}
+		inputs[1].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
+		inputs[2].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
+		inputs[3].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
+		SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+		//if (GetAsyncKeyState('Q') & 0x8000)
+		if (GetAsyncKeyState('Q') & 0x8000)
+		{
+			//TemplateManager::SetMousePosition();
+			// the 'A' key is currently being held down
+			inputs[0].ki.dwFlags = KEYEVENTF_SCANCODE;
+			SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+			//rangeQtoogle = false;
+		}
+		if (GetAsyncKeyState('W') & 0x8000)
+		{
+			TemplateManager::SetMousePosition();
+			// the 'A' key is currently being held down
+			inputs[1].ki.dwFlags = KEYEVENTF_SCANCODE;
+			SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+		}
+		if (GetAsyncKeyState('E') & 0x8000)
+		{
+			TemplateManager::SetMousePosition();
+			// the 'A' key is currently being held down
+			inputs[2].ki.dwFlags = KEYEVENTF_SCANCODE;
+			SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+		}
+		if (GetAsyncKeyState('R') & 0x8000)
+		{
+			TemplateManager::SetMousePosition();
+			// the 'A' key is currently being held down
+			inputs[3].ki.dwFlags = KEYEVENTF_SCANCODE;
+			SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+		}
+		Sleep(100);
+	}
+}
+
+void TemplateLoop(int index) {
+	while (true) {
+		auto t1 = chrono::high_resolution_clock::now();
+		TemplateManager::FindTemplate_gpu(0, 0, IMAGE, TEMPL[index], index);
+		auto t2 = chrono::high_resolution_clock::now();
+		auto ms_int = chrono::duration_cast<chrono::milliseconds>(t2 - t1);
+		//cout << ms_int.count() << "ms\n";
+	}
+}
 
 int main(int argc, char** argv) {
 
@@ -142,12 +207,14 @@ int main(int argc, char** argv) {
 	else {
 		cout << "picicic" << endl;
 	}
-
+	Mat::setDefaultAllocator(cuda::HostMem::getAllocator(cuda::HostMem::AllocType::PAGE_LOCKED));
+	cout<<"cuda device : "<< cuda::getCudaEnabledDeviceCount() <<endl;
 	// construct
+	//TEMPL[i].upload(TEMPL_);
+	//TEMPL_2.upload(TEMPL__2);
 	//cout << "cout: " << cuda::getCudaEnabledDeviceCount() << endl;
 
 	//IMAGE.upload(IMAGE_);
-	TEMPL.upload(TEMPL_);
 	//cuda::cvtColor(TEMPL, TEMPL, COLOR_RGB2RGBA);
 
 	//namedWindow(image_window, WINDOW_AUTOSIZE);
@@ -157,11 +224,21 @@ int main(int argc, char** argv) {
 	//IMAGE.download(imgo);
 	//imwrite("D:/Programing/projects/cANDc++/LOLHack/Resources/pipi.png", imgo);
 	cout << IMAGE.channels() << endl;
-	cout << TEMPL.channels() << endl;
+	//cout << TEMPL.channels() << endl;
 	cuda::cvtColor(IMAGE, IMAGE, COLOR_RGBA2GRAY);
-	cuda::cvtColor(TEMPL, TEMPL, COLOR_RGB2GRAY);
-	cuda::threshold(TEMPL, TEMPL, 150, 255, THRESH_BINARY);
+	//cuda::cvtColor(IMAGE, IMAGE, COLOR_RGBA2RGB);
+	//cuda::cvtColor(TEMPL, TEMPL, COLOR_RGB2GRAY);
+	//cuda::cvtColor(TEMPL_2, TEMPL_2, COLOR_RGB2GRAY);
+	//cuda::threshold(TEMPL, TEMPL, 150, 255, THRESH_BINARY);
+	//cuda::threshold(TEMPL_2, TEMPL_2, 150, 255, THRESH_BINARY);
 
+	for (int i = 0; i < 5; i++) {
+		TEMPL_ = imread("D:/Programing/projects/cANDc++/LOLHack/Resources/templates/"+champions[i]+".png", IMREAD_UNCHANGED);
+		TEMPL[i].upload(TEMPL_);
+		cuda::cvtColor(TEMPL[i], TEMPL[i], COLOR_RGB2GRAY);
+		cuda::threshold(TEMPL[i], TEMPL[i], 150, 255, THRESH_BINARY);
+		cout << champions[i] << endl;
+	}
 	//inRange(experimental, Scalar(0), Scalar())
 	//inRange(experimental, Scalar(205), Scalar(255), experimental);
 	//cuda::inRange(TEMPL, Scalar(150), Scalar(255), TEMPL);
@@ -178,7 +255,7 @@ int main(int argc, char** argv) {
 	//return 0;
 
 	//return 0;
-	if (IMAGE.empty() || TEMPL.empty() || (use_mask && mask.empty()))
+	if (IMAGE.empty() || TEMPL[0].empty() || (use_mask && mask.empty()))
 	{
 		cout << "Can't read one of the images" << endl;
 		//return EXIT_FAILURE;
@@ -204,65 +281,55 @@ int main(int argc, char** argv) {
 	inputs[3].type = INPUT_KEYBOARD;
 	inputs[3].ki.wScan = MapVirtualKey(0x4C, MAPVK_VK_TO_VSC);
 	inputs[3].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
+	//cuda::HostMem tempImgMem(1440, 2560, CV_8UC4, cuda::HostMem::PAGE_LOCKED);
+	cuda::GpuMat tempIMAGE;
 	Mat tempImg;
 	cuda::GpuMat old_img;
 	//old_img.upload(Mat::zeros(IMAGE.cols, IMAGE.rows, CV_8UC1));
 	//old_img = IMAGE;
-	bool rangeQtoogle = false;
+	/*bool rangeQtoogle = false;*/
+
+	capo.CaptureScreen(tempImg);
+	IMAGE.upload(tempImg);
+	cuda::cvtColor(IMAGE, IMAGE, COLOR_RGBA2GRAY);
+	cuda::threshold(IMAGE, IMAGE, 200, 255, THRESH_BINARY);
+	/*for (int i = 0; i < 5; i++) {
+		imagePool[i] = IMAGE;
+	}*/
+
+	thread t1(EventLoop);
+	thread find0(TemplateLoop, 0);
+	thread find1(TemplateLoop, 1);
+	thread find2(TemplateLoop, 2);
+	thread find3(TemplateLoop, 3);
+	thread find4(TemplateLoop, 4);
 	while (true) {
 		//Sleep(5000);
 		//waitKey(1);
 		//image.release();
 		//cuda::cvtColor(ScreenShooter::TakeScreenShot(), IMAGE, COLOR_RGB2GRAY);
 		//inputs[0].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
-		if (GetAsyncKeyState('Q') != 0) {
-			rangeQtoogle = true;
-		}
-		else if (rangeQtoogle) {
-			TemplateManager::SetMousePosition();
-			inputs[0].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
-			rangeQtoogle = false;
-		}
-		inputs[1].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
-		inputs[2].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
-		inputs[3].ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_SCANCODE;
-		SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
-		//if (GetAsyncKeyState('Q') & 0x8000)
-		if (GetAsyncKeyState('Q') & 0x8000)
-		{
-			//TemplateManager::SetMousePosition();
-			// the 'A' key is currently being held down
-			inputs[0].ki.dwFlags = KEYEVENTF_SCANCODE;
-			SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
-			rangeQtoogle = false;
-		}
-		if (GetAsyncKeyState('W') & 0x8000)
-		{
-			TemplateManager::SetMousePosition();
-			// the 'A' key is currently being held down
-			inputs[1].ki.dwFlags = KEYEVENTF_SCANCODE;
-			SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
-		}
-		if (GetAsyncKeyState('E') & 0x8000)
-		{
-			TemplateManager::SetMousePosition();
-			// the 'A' key is currently being held down
-			inputs[2].ki.dwFlags = KEYEVENTF_SCANCODE;
-			SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
-		}
-		if (GetAsyncKeyState('R') & 0x8000)
-		{
-			TemplateManager::SetMousePosition();
-			// the 'A' key is currently being held down
-			inputs[3].ki.dwFlags = KEYEVENTF_SCANCODE;
-			SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
-		}
 		capo.CaptureScreen(tempImg);
-		IMAGE.upload(tempImg);
+		tempIMAGE.upload(tempImg);
+		//cuda::Stream s;
 		//Mat showimg;
-		//IMAGE.download(showimg);
-		cuda::cvtColor(IMAGE, IMAGE, COLOR_RGBA2GRAY);
-		cuda::threshold(IMAGE, IMAGE, 200, 255, THRESH_BINARY);
+		//IMAGE.download(tempImg);
+		//imshow(image_window, tempImg(Rect(640, 320, 1280, 800)));
+		//waitKey(1);
+		//if (IMAGE.empty()) cout << "empty idiiot" << endl;
+		cuda::cvtColor(tempIMAGE, tempIMAGE, COLOR_RGBA2GRAY);
+		//cuda::cvtColor(IMAGE, IMAGE, COLOR_RGBA2RGB);
+		//if (IMAGE.empty()) cout << "empty idiiot2" << endl;
+		cuda::threshold(tempIMAGE, tempIMAGE, 200, 255, THRESH_BINARY);
+		//IMAGE = tempIMAGE.clone();
+		IMAGE = tempIMAGE(Rect(640, 320, 1280, 800));
+		/*for (int i = 0; i < 5; i++) {
+			imagePool[i] = tempIMAGE.clone();
+		}*/
+		//IMAGE = tempIMAGE;
+
+		//TemplateManager::FindTemplate(0, 0, tempImg, TEMPL_);
+		//IMAGE = tempIMAGE;
 		//cuda::GpuMat compared;
 		//cuda::compare(old_img, IMAGE, compared, CMP_EQ);
 		//int perc = cuda::countNonZero(compared);
@@ -275,12 +342,34 @@ int main(int argc, char** argv) {
 		//}
 		//cvtColor(tempImg, tempImg, COLOR_RGBA2GRAY);
 		//IMAGE = ScreenShooter::TakeScreenShotV2();
-		IMAGE = TemplateManager::FindTemplate_gpu(0,0, IMAGE, TEMPL);
+		/*auto t1 = chrono::high_resolution_clock::now();
+		TemplateManager::FindTemplate_gpu(0, 0, IMAGE, TEMPL[0],0);
+		TemplateManager::FindTemplate_gpu(0, 0, IMAGE, TEMPL[1], 1);
+		TemplateManager::FindTemplate_gpu(0, 0, IMAGE, TEMPL[2], 2);
+		TemplateManager::FindTemplate_gpu(0, 0, IMAGE, TEMPL[3], 3);
+		TemplateManager::FindTemplate_gpu(0, 0, IMAGE, TEMPL[4], 4);
+		auto t2 = chrono::high_resolution_clock::now();
+		auto ms_int = chrono::duration_cast<chrono::milliseconds>(t2 - t1);
+		cout << ms_int.count() << "ms\n";*/
+	/*	find0.join();
+		find1.join();
+		find2.join();
+		find3.join();
+		find4.join();*/
+		TemplateManager::DrawRectAndUpdateMousePos();
+		//IMAGE = TemplateManager::FindTemplate_gpu(0, 0, IMAGE, TEMPL);
+		//IMAGE = TemplateManager::FindTemplate_gpu(0, 0, IMAGE, TEMPL);
+		//IMAGE = TemplateManager::FindTemplate_gpu(0,0, IMAGE, TEMPL);
 		//img = imread("D:/Programing/projects/cANDc++/LOLHack/Resources/img2.png");
 		//FindTemplate();
-		//imshow(image_window, showimg);
-		//waitKey(0);
+		//Mat showing;
+		//tempIMAGE.download(showing);
+		//imshow(image_window, showing);
+		//waitKey(1);
 	}
+	t1.join();
+	//t2.join();
+	//t3.join();
 
 	ScreenShooter::Destroy();
 
